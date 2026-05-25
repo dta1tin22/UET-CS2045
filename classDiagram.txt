@@ -1,0 +1,112 @@
+classDiagram
+    %% 1. KẾ THỪA (INHERITANCE): Hệ thống User & Phân quyền
+    class User {
+        +int id
+        +String fullName
+        +String phone
+        +String email
+        +String role
+        +login()
+        +logout()
+    }
+
+    class Student {
+        +boolean isVIP
+        +List~DeviceSession~ activeDevices
+        +upgradeToVIP()
+        +checkDeviceLimit()
+    }
+
+    class Teacher {
+        +float totalRevenue
+        +createCourse()
+        +manageQuestionBank()
+    }
+
+    class Staff {
+        +moderateChat()
+        +answerForum()
+    }
+
+    class Admin {
+        +viewSystemReport()
+        +manageUsers()
+    }
+
+    User <|-- Student
+    User <|-- Teacher
+    User <|-- Staff
+    User <|-- Admin
+
+    %% 2. PHÂN HỆ KHÓA HỌC & BÀI HỌC
+    class Course {
+        +int id
+        +String title
+        +float price
+        +String status
+        +calculateRevenue()
+    }
+
+    class Lesson {
+        +int id
+        +String title
+        +String videoUrl
+        +boolean isFreeTrial
+        +generateDynamicWatermark(Student)
+    }
+
+    %% 3. PHÂN HỆ THANH TOÁN TỰ ĐỘNG
+    class PaymentTransaction {
+        +String transactionId
+        +float amount
+        +String status
+        +String webhookPayload
+        +generateVietQR()
+        +processBankWebhook()
+    }
+
+    %% 4. PHÂN HỆ BẢO MẬT & PHIÊN ĐĂNG NHẬP
+    class DeviceSession {
+        +String deviceId
+        +String ipAddress
+        +DateTime lastActive
+        +String location
+        +terminateSession()
+        +triggerOTPChallenge()
+    }
+
+    %% 5. PHÂN HỆ THI THỬ & CHỐNG GIAN LẬN
+    class QuestionBank {
+        +String subject
+        +getRandomQuestions(int, difficulty)
+    }
+
+    class Question {
+        +int id
+        +String content
+        +String difficultyLevel
+        +String tags
+    }
+
+    class QuizAttempt {
+        +int id
+        +DateTime startTime
+        +int tabSwitchViolations
+        +float finalScore
+        +recordViolation()
+        +forceSubmit()
+        +calculateScore()
+    }
+
+    %% MỐI QUAN HỆ (RELATIONSHIPS)
+    Teacher "1" --> "" Course : manages
+    Course "1"-- "" Lesson : contains (Composition)
+
+    Student "1" --> "" DeviceSession : has (Max 2)
+    Student "1" --> "" PaymentTransaction : initiates
+    PaymentTransaction "" --> "1" Course : pays for
+
+    Student "1" --> "" QuizAttempt : takes
+    QuizAttempt "" --> "" Question : includes
+    QuestionBank "1" o-- "" Question : aggregates (Aggregation)
+    Teacher "1" --> "*" QuestionBank : owns

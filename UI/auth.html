@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xác thực & Tài khoản - LMS Luyện thi</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    body {
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .auth-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+    }
+    .auth-container {
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+    .auth-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border);
+    }
+    .auth-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .auth-title {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    .auth-subtitle {
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .auth-panel {
+      display: none;
+    }
+    .auth-panel.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .password-checklist {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+      color: var(--muted);
+    }
+    .checklist-item.valid {
+      color: var(--success);
+    }
+    .checklist-item:last-child { margin-bottom: 0; }
+    
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 24px 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--border);
+    }
+    .divider:not(:empty)::before { margin-right: .5em; }
+    .divider:not(:empty)::after { margin-left: .5em; }
+    
+    .oauth-btn {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--fg);
+      margin-bottom: 12px;
+    }
+    .oauth-btn:hover { background: var(--bg); }
+    
+    .otp-inputs {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 24px 0;
+    }
+    .otp-input {
+      width: 48px;
+      height: 56px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    .otp-input:focus {
+      border-color: var(--accent);
+      outline: none;
+    }
+    .timer {
+      font-family: var(--font-mono, monospace);
+      color: var(--warning);
+      font-weight: 600;
+    }
+    
+    /* Settings panel styling */
+    .settings-container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 24px;
+      display: none;
+    }
+    .settings-container.active { display: block; }
+    
+    .settings-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 32px;
+    }
+    .settings-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .nav-item {
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s, color 0.2s;
+    }
+    .nav-item:hover { background: var(--bg); color: var(--fg); }
+    .nav-item.active { background: color-mix(in oklch, var(--accent) 15%, transparent); color: var(--accent); }
+    
+    .settings-section {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+    .settings-section h2 { margin-bottom: 24px; font-size: 20px; }
+    
+    .qr-box {
+      width: 160px;
+      height: 160px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      display: grid;
+      place-items: center;
+      margin: 16px 0;
+    }
+    .backup-codes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      background: var(--bg);
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      font-family: monospace;
+      font-size: 14px;
+    }
+    .device-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .device-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .device-item:last-child { border-bottom: none; padding-bottom: 0; }
+    
+    @media (max-width: 768px) {
+      .settings-layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  
+  <nav class="navbar">
+    <div class="container flex items-center justify-between w-full">
+      <a href="index.html" class="navbar-brand">LMS Luyện thi</a>
+      <div id="nav-user-actions">
+        <button class="btn btn-ghost" onclick="showPanel('login-panel')">Đăng nhập</button>
+        <button class="btn btn-primary" onclick="showPanel('register-panel')">Đăng ký</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Centered Auth Forms -->
+  <div class="auth-wrapper" id="auth-wrapper">
+    <div class="auth-container">
+      <div class="auth-card">
+        
+        <!-- LOGIN PANEL -->
+        <div id="login-panel" class="auth-panel active">
+          <div class="auth-header">
+            <h1 class="auth-title">Đăng nhập</h1>
+            <p class="auth-subtitle">Chào mừng bạn quay lại</p>
+          </div>
+          <form onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label class="label">Email hoặc Số điện thoại</label>
+              <input type="text" class="input" placeholder="Nhập email hoặc SĐT" required>
+            </div>
+            <div class="form-group">
+              <div class="flex justify-between items-center mb-2">
+                <label class="label" style="margin-bottom:0;">Mật khẩu</label>
+                <a href="#" style="font-size:12px;">Quên mật khẩu?</a>
+              </div>
+              <input type="password" class="input" placeholder="Nhập mật khẩu" required>
+            </div>
+            <div class="flex items-center gap-2 mb-6">
+              <input type="checkbox" id="remember">
+              <label for="remember" style="font-size:13px; cursor:pointer;">Ghi nhớ đăng nhập</label>
+            </div>
+            <button type="submit" class="btn btn-primary w-full">Đăng nhập</button>
+          </form>
+          
+          <div class="divider">hoặc đăng nhập bằng</div>
+          <button class="btn oauth-btn">Google</button>
+          <button class="btn oauth-btn">Facebook</button>
+          
+          <div class="text-center mt-4" style="font-size: 13px;">
+            Chưa có tài khoản? <a href="#" onclick="showPanel('register-panel')">Đăng ký ngay</a>
+          </div>
+          <div class="text-center mt-6">
+            <a href="#" class="text-muted" style="font-size: 12px;">(Dành cho Giảng viên / Admin đăng nhập)</a>
+          </div>
+        </div>
+
+        <!-- REGISTER PANEL -->
+        <div id="register-panel" class="auth-panel">
+          <div class="auth-header">
+            <h1 class="auth-title">Tạo tài khoản</h1>
+            <p class="auth-subtitle">Bắt đầu hành trình luyện thi của bạn</p>
+          </div>
+          <form onsubmit="handleRegister(event)">
+            <div class="form-group">
+              <label class="label">Họ và tên</label>
+              <input type="text" class="input" placeholder="Nguyễn Văn A" required>
+            </div>
+            <div class="flex gap-4">
+              <div class="form-group w-full">
+                <label class="label">Số điện thoại</label>
+                <input type="tel" class="input" placeholder="09xxxx" required>
+              </div>
+              <div class="form-group w-full">
+                <label class="label">Email</label>
+                <input type="email" class="input" placeholder="email@example.com" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="label">Mật khẩu</label>
+              <input type="password" class="input" id="reg-password" placeholder="Tạo mật khẩu" oninput="checkPassword()" required>
+              <div class="password-checklist">
+                <div class="checklist-item" id="chk-len">✓ Tối thiểu 8 ký tự</div>
+                <div class="checklist-item" id="chk-upper">✓ 1 chữ hoa</div>
+                <div class="checklist-item" id="chk-num">✓ 1 chữ số</div>
+                <div class="checklist-item" id="chk-spec">✓ 1 ký tự đặc biệt</div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="label">Xác nhận mật khẩu</label>
+              <input type="password" class="input" placeholder="Nhập lại mật khẩu" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-full mt-4">Đăng ký</button>
+          </form>
+          <div class="text-center mt-4" style="font-size: 13px;">
+            Đã có tài khoản? <a href="#" onclick="showPanel('login-panel')">Đăng nhập</a>
+          </div>
+        </div>
+
+        <!-- OTP PANEL -->
+        <div id="otp-panel" class="auth-panel">
+          <div class="auth-header">
+            <h1 class="auth-title">Xác thực OTP</h1>
+            <p class="auth-subtitle">Mã 6 chữ số đã được gửi qua SMS</p>
+          </div>
+          <form onsubmit="handleOTP(event)">
+            <div class="otp-inputs">
+              <input type="text" maxlength="1" class="otp-input" autofocus>
+              <input type="text" maxlength="1" class="otp-input">
+              <input type="text" maxlength="1" class="otp-input">
+              <input type="text" maxlength="1" class="otp-input">
+              <input type="text" maxlength="1" class="otp-input">
+              <input type="text" maxlength="1" class="otp-input">
+            </div>
+            <div class="text-center mb-6">
+              <span class="text-muted" style="font-size: 13px;">Mã hết hạn sau:</span>
+              <span class="timer" id="otp-timer">05:00</span>
+            </div>
+            <button type="submit" class="btn btn-primary w-full mb-4">Xác nhận</button>
+            <div class="text-center">
+              <button type="button" class="btn btn-ghost" style="font-size: 13px;" disabled id="resend-btn">Gửi lại mã (còn 3 lần)</button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS PANEL (Shown after auth) -->
+  <div class="settings-container" id="settings-container">
+    <div class="settings-layout">
+      
+      <div class="settings-nav">
+        <div class="nav-item active" onclick="switchSetting('profile', this)">Thông tin cá nhân</div>
+        <div class="nav-item" onclick="switchSetting('security', this)">Bảo mật & MFA</div>
+        <div class="nav-item" onclick="switchSetting('devices', this)">Quản lý thiết bị</div>
+        <div class="nav-item text-danger" onclick="logout()" style="margin-top: 16px;">Đăng xuất</div>
+      </div>
+      
+      <div class="settings-content">
+        
+        <!-- Profile -->
+        <div id="setting-profile" class="settings-section">
+          <h2>Hồ sơ của bạn</h2>
+          <div class="flex gap-4 items-center mb-6">
+            <div style="width: 80px; height: 80px; border-radius: 50%; background: var(--bg); display: grid; place-items: center; font-size: 32px; border: 1px solid var(--border);">👤</div>
+            <button class="btn btn-outline">Đổi ảnh đại diện</button>
+          </div>
+          <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="label">Họ và tên</label>
+              <input type="text" class="input" value="Nguyễn Văn A">
+            </div>
+            <div class="form-group">
+              <label class="label">Ngày sinh</label>
+              <input type="date" class="input" value="2005-01-01">
+            </div>
+            <div class="form-group">
+              <label class="label">Giới tính</label>
+              <select class="input">
+                <option>Nam</option>
+                <option>Nữ</option>
+                <option>Khác</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="label">Email (Không thể đổi)</label>
+              <input type="email" class="input" value="nguyenvana@example.com" disabled>
+            </div>
+          </div>
+          <button class="btn btn-primary mt-4">Lưu thay đổi</button>
+        </div>
+        
+        <!-- Security MFA -->
+        <div id="setting-security" class="settings-section" style="display:none;">
+          <h2>Xác thực đa yếu tố (MFA)</h2>
+          <p class="text-muted mb-4">Quét mã QR dưới đây bằng Google Authenticator hoặc Authy để bật MFA.</p>
+          <div class="flex gap-6">
+            <div>
+              <div class="qr-box">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cpath d='M10 10h30v30H10zM80 10h30v30H80zM10 80h30v30H10zM45 45h30v30H45z' fill='%23000'/%3E%3Cpath d='M20 20h10v10H20zM90 20h10v10H90zM20 90h10v10H20z' fill='%23fff'/%3E%3C/svg%3E" alt="QR" width="120">
+              </div>
+              <div class="form-group">
+                <input type="text" class="input" placeholder="Nhập mã 6 số từ app">
+              </div>
+              <button class="btn btn-primary w-full">Kích hoạt MFA</button>
+            </div>
+            
+            <div style="flex: 1;">
+              <h3 style="font-size: 14px; margin-bottom: 12px;">Mã dự phòng (Backup Codes)</h3>
+              <p class="text-muted mb-4" style="font-size: 13px;">Lưu lại 10 mã này để đăng nhập khi mất thiết bị. Mỗi mã chỉ dùng 1 lần.</p>
+              <div class="backup-codes">
+                <div>8291-A48X</div>
+                <div>L2M9-10P3</div>
+                <div>X9K1-44B2</div>
+                <div>99A1-ZZ4X</div>
+                <div>P101-C443</div>
+                <div>8291-A48X</div>
+                <div>L2M9-10P3</div>
+                <div>X9K1-44B2</div>
+                <div>99A1-ZZ4X</div>
+                <div>P101-C443</div>
+              </div>
+              <button class="btn btn-outline w-full mt-4">Tải xuống file TXT</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Devices -->
+        <div id="setting-devices" class="settings-section" style="display:none;">
+          <h2>Phiên đăng nhập</h2>
+          <p class="text-muted mb-6">Quản lý các thiết bị đang đăng nhập tài khoản của bạn.</p>
+          <div class="device-list">
+            <div class="device-item">
+              <div>
+                <div style="font-weight: 500; margin-bottom: 4px;">MacBook Pro (Thiết bị hiện tại)</div>
+                <div class="text-muted" style="font-size: 13px;">Chrome 114 • IP: 192.168.1.1 • Vừa xong</div>
+              </div>
+              <span class="badge badge-success">Đang dùng</span>
+            </div>
+            <div class="device-item">
+              <div>
+                <div style="font-weight: 500; margin-bottom: 4px;">iPhone 14 Pro</div>
+                <div class="text-muted" style="font-size: 13px;">Safari iOS • IP: 14.22.x.x • Hôm qua</div>
+              </div>
+              <button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;">Đăng xuất</button>
+            </div>
+            <div class="device-item">
+              <div>
+                <div style="font-weight: 500; margin-bottom: 4px;">Windows PC</div>
+                <div class="text-muted" style="font-size: 13px;">Edge • IP: 113.160.x.x • 3 ngày trước</div>
+              </div>
+              <button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;">Đăng xuất</button>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showPanel(id) {
+      document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    
+    function switchSetting(id, el) {
+      document.querySelectorAll('.settings-section').forEach(s => s.style.display = 'none');
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('setting-' + id).style.display = 'block';
+      el.classList.add('active');
+    }
+
+    // Handle form submissions for prototype flow
+    function handleLogin(e) {
+      e.preventDefault();
+      // Simulate sending OTP
+      showPanel('otp-panel');
+      startTimer();
+    }
+    function handleRegister(e) {
+      e.preventDefault();
+      // Simulate going to OTP
+      showPanel('otp-panel');
+      startTimer();
+    }
+    function handleOTP(e) {
+      e.preventDefault();
+      // Success auth, show settings
+      document.getElementById('auth-wrapper').style.display = 'none';
+      document.getElementById('nav-user-actions').style.display = 'none';
+      document.getElementById('settings-container').classList.add('active');
+    }
+    function logout() {
+      document.getElementById('settings-container').classList.remove('active');
+      document.getElementById('auth-wrapper').style.display = 'flex';
+      document.getElementById('nav-user-actions').style.display = 'block';
+      showPanel('login-panel');
+    }
+
+    // OTP Timer
+    let timerInt;
+    function startTimer() {
+      clearInterval(timerInt);
+      let time = 300; // 5 mins
+      const el = document.getElementById('otp-timer');
+      timerInt = setInterval(() => {
+        time--;
+        const m = Math.floor(time / 60).toString().padStart(2, '0');
+        const s = (time % 60).toString().padStart(2, '0');
+        el.textContent = `${m}:${s}`;
+        if(time <= 0) {
+          clearInterval(timerInt);
+          document.getElementById('resend-btn').removeAttribute('disabled');
+        }
+      }, 1000);
+    }
+
+    // Auto-advance OTP inputs
+    const inputs = document.querySelectorAll('.otp-input');
+    inputs.forEach((inpt, idx) => {
+      inpt.addEventListener('input', () => {
+        if(inpt.value && idx < inputs.length - 1) inputs[idx+1].focus();
+      });
+      inpt.addEventListener('keydown', (e) => {
+        if(e.key === 'Backspace' && !inpt.value && idx > 0) inputs[idx-1].focus();
+      });
+    });
+
+    // Password strength checklist simulator
+    function checkPassword() {
+      const val = document.getElementById('reg-password').value;
+      const chkLen = document.getElementById('chk-len');
+      const chkUpper = document.getElementById('chk-upper');
+      const chkNum = document.getElementById('chk-num');
+      const chkSpec = document.getElementById('chk-spec');
+      
+      val.length >= 8 ? chkLen.classList.add('valid') : chkLen.classList.remove('valid');
+      /[A-Z]/.test(val) ? chkUpper.classList.add('valid') : chkUpper.classList.remove('valid');
+      /[0-9]/.test(val) ? chkNum.classList.add('valid') : chkNum.classList.remove('valid');
+      /[^a-zA-Z0-9]/.test(val) ? chkSpec.classList.add('valid') : chkSpec.classList.remove('valid');
+    }
+  </script>
+</body>
+</html>

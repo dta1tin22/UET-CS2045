@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Khóa học: Luyện Thi THPT QG Toán 2025 - LMS</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .hero-section {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 60px 0;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 40px;
+    }
+    .hero-content h1 {
+      font-size: 36px;
+      margin-bottom: 16px;
+    }
+    .hero-content p {
+      font-size: 16px;
+      color: var(--muted);
+      margin-bottom: 24px;
+      max-width: 600px;
+      line-height: 1.6;
+    }
+    .hero-stats {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .course-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      position: sticky;
+      top: 88px;
+    }
+    .course-preview {
+      width: 100%;
+      height: 220px;
+      background: #000;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      cursor: pointer;
+    }
+    .course-preview img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.6;
+    }
+    .play-btn {
+      width: 60px;
+      height: 60px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      z-index: 1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      padding-left: 4px; /* optical center */
+      font-size: 24px;
+    }
+    .preview-badge {
+      position: absolute;
+      bottom: 12px;
+      background: rgba(0,0,0,0.7);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      z-index: 1;
+    }
+    
+    .course-pricing {
+      padding: 24px;
+    }
+    .price-current {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--fg);
+    }
+    .price-original {
+      font-size: 16px;
+      color: var(--muted);
+      text-decoration: line-through;
+      margin-left: 8px;
+    }
+    
+    .content-section {
+      padding: 40px 0;
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 40px;
+    }
+    
+    .section-title {
+      font-size: 24px;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    /* Curriculum / Lộ trình học */
+    .curriculum-chapter {
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .chapter-header {
+      padding: 16px;
+      background: var(--bg);
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .lesson-item {
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .lesson-item:hover {
+      background: var(--bg);
+    }
+    .lesson-item:last-child {
+      border-bottom: none;
+    }
+    .lesson-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--fg);
+      font-size: 14px;
+    }
+    .lesson-meta {
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .lock-icon { color: var(--muted); }
+    
+    /* Teacher Info */
+    .teacher-card {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+    .teacher-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--border);
+    }
+    
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-box {
+      background: var(--surface);
+      width: 100%;
+      max-width: 400px;
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+    }
+    .modal-box h2 {
+      margin-bottom: 12px;
+    }
+    .modal-box p {
+      color: var(--muted);
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+    
+    @media (max-width: 900px) {
+      .hero-grid, .content-section {
+        grid-template-columns: 1fr;
+      }
+      .course-card {
+        position: static;
+      }
+    }
+  </style>
+</head>
+<body>
+  
+  <nav class="navbar">
+    <div class="container flex items-center justify-between w-full">
+      <a href="index.html" class="navbar-brand">LMS Luyện thi</a>
+      <div>
+        <a href="auth.html" class="btn btn-ghost">Đăng nhập</a>
+        <a href="auth.html" class="btn btn-primary">Đăng ký</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <div class="hero-section">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <div class="mb-4">
+          <span class="badge badge-accent">Khóa luyện thi THPT QG</span>
+        </div>
+        <h1>Khóa học: Toán Học 12 - Chinh Phục Điểm 9+ (2025)</h1>
+        <p>Lộ trình toàn diện từ mất gốc đến 9+ môn Toán. Hệ thống bài giảng chi tiết, bài tập phân dạng cực chuẩn và hệ thống thi thử theo chuẩn cấu trúc Bộ GD&ĐT.</p>
+        
+        <div class="hero-stats">
+          <div class="stat-item">⭐ 4.9 (1,240 đánh giá)</div>
+          <div class="stat-item">👥 5,430 học viên</div>
+          <div class="stat-item">📚 12 Chương - 145 Bài học</div>
+        </div>
+        
+        <div class="teacher-card">
+          <div class="teacher-avatar"></div>
+          <div>
+            <div style="font-weight: 600; font-size: 16px;">Thầy Nguyễn Văn Trọng</div>
+            <div style="font-size: 14px; color: var(--muted);">Chuyên gia luyện thi Toán - 15 năm kinh nghiệm</div>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <div class="course-card">
+          <div class="course-preview" onclick="playPreview()">
+            <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=800" alt="Video thumbnail">
+            <div class="play-btn">▶</div>
+            <div class="preview-badge">Xem Video Giới thiệu (02:45)</div>
+          </div>
+          <div class="course-pricing">
+            <div class="mb-4">
+              <span class="price-current">899,000đ</span>
+              <span class="price-original">1,500,000đ</span>
+            </div>
+            <a href="auth.html" class="btn btn-primary w-full" style="padding: 14px; font-size: 16px;">Đăng ký học ngay</a>
+            <div class="text-center mt-4">
+              <p style="font-size: 13px; color: var(--muted);">✓ Truy cập trọn đời &nbsp; ✓ Cập nhật đề 2025</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container content-section">
+    <div class="main-content">
+      <h2 class="section-title">Lộ trình học tập</h2>
+      
+      <!-- Curriculum -->
+      <div class="curriculum">
+        <div class="curriculum-chapter">
+          <div class="chapter-header">
+            <span>Chương 1: Ứng dụng đạo hàm để khảo sát hàm số</span>
+            <span class="text-muted" style="font-size: 13px;">12 Bài học</span>
+          </div>
+          <div class="chapter-body">
+            <div class="lesson-item" onclick="openAuthModal()">
+              <div class="lesson-title">
+                <span>▶</span>
+                <span>Bài 1: Sự đồng biến, nghịch biến của hàm số</span>
+                <span class="badge badge-success">Cho phép học thử</span>
+              </div>
+              <div class="lesson-meta">45:20</div>
+            </div>
+            <div class="lesson-item" onclick="openAuthModal()">
+              <div class="lesson-title">
+                <span class="lock-icon">🔒</span>
+                <span class="text-muted">Bài 2: Cực trị của hàm số</span>
+              </div>
+              <div class="lesson-meta">52:10</div>
+            </div>
+            <div class="lesson-item" onclick="openAuthModal()">
+              <div class="lesson-title">
+                <span class="lock-icon">🔒</span>
+                <span class="text-muted">Bài 3: Giá trị lớn nhất, giá trị nhỏ nhất</span>
+              </div>
+              <div class="lesson-meta">38:45</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="curriculum-chapter">
+          <div class="chapter-header">
+            <span>Chương 2: Khối đa diện</span>
+            <span class="text-muted" style="font-size: 13px;">8 Bài học</span>
+          </div>
+          <div class="chapter-body">
+            <div class="lesson-item" onclick="openAuthModal()">
+              <div class="lesson-title">
+                <span class="lock-icon">🔒</span>
+                <span class="text-muted">Bài 1: Khái niệm về khối đa diện</span>
+              </div>
+              <div class="lesson-meta">41:00</div>
+            </div>
+            <div class="lesson-item" onclick="openAuthModal()">
+              <div class="lesson-title">
+                <span class="lock-icon">🔒</span>
+                <span class="text-muted">Bài 2: Thể tích khối lăng trụ</span>
+              </div>
+              <div class="lesson-meta">55:30</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="curriculum-chapter">
+          <div class="chapter-header">
+            <span>Thi thử - Đánh giá năng lực</span>
+            <span class="text-muted" style="font-size: 13px;">3 Đề thi</span>
+          </div>
+          <div class="chapter-body">
+            <div class="lesson-item" onclick="openAuthModal()">
+              <div class="lesson-title">
+                <span class="lock-icon">📝</span>
+                <span class="text-muted">Bài kiểm tra Chương 1 & 2 (90 phút)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+    <div>
+      <!-- Empty space for sidebar structure on desktop -->
+    </div>
+  </div>
+
+  <!-- Auth Required Modal -->
+  <div class="modal-overlay" id="auth-modal" onclick="closeAuthModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div style="font-size: 48px; margin-bottom: 16px;">🔐</div>
+      <h2>Yêu cầu Đăng nhập</h2>
+      <p>Bạn cần đăng ký hoặc đăng nhập để học thử bài học này hoặc xem các bài học bị khóa.</p>
+      <div class="flex flex-col gap-2" style="flex-direction: column;">
+        <a href="auth.html" class="btn btn-primary w-full">Đăng ký miễn phí</a>
+        <a href="auth.html" class="btn btn-outline w-full mt-2">Đăng nhập</a>
+      </div>
+      <button class="btn btn-ghost mt-4" onclick="closeAuthModal(event)">Đóng lại</button>
+    </div>
+  </div>
+
+  <script>
+    function openAuthModal() {
+      document.getElementById('auth-modal').classList.add('active');
+    }
+    function closeAuthModal(e) {
+      document.getElementById('auth-modal').classList.remove('active');
+    }
+    function playPreview() {
+      // Logic for preview video, we'll just show the modal for prototype
+      alert("Trình phát video giới thiệu (< 3 phút) sẽ hiển thị ở đây.");
+    }
+  </script>
+</body>
+</html>

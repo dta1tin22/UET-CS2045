@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phòng học - LMS Luyện thi</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    body {
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .learning-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+      width: 320px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .progress-bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 999px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--success);
+      width: 15%; /* Example progress */
+    }
+    .curriculum-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .chapter {
+      border-bottom: 1px solid var(--border);
+    }
+    .chapter-title {
+      padding: 12px 16px;
+      background: var(--bg);
+      font-weight: 600;
+      font-size: 14px;
+      position: sticky;
+      top: 0;
+    }
+    .lesson {
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+    .lesson:last-child { border-bottom: none; }
+    .lesson:hover { background: var(--bg); }
+    .lesson.active { background: color-mix(in oklch, var(--accent) 10%, transparent); }
+    
+    .lesson-icon {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+    }
+    .icon-done { color: var(--success); }
+    .icon-playing { color: var(--accent); }
+    .icon-pending { color: var(--muted); }
+    
+    .lesson-info { flex: 1; }
+    .lesson-name {
+      font-size: 14px;
+      color: var(--fg);
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+    .lesson-duration {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    
+    /* Main Content */
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      position: relative;
+    }
+    
+    /* Video Player */
+    .video-container {
+      width: 100%;
+      background: #000;
+      aspect-ratio: 16/9;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .video-placeholder {
+      color: #fff;
+      font-size: 20px;
+      opacity: 0.5;
+    }
+    
+    /* Dynamic Watermark */
+    .watermark {
+      position: absolute;
+      color: rgba(255,255,255,0.4);
+      font-size: 16px;
+      font-weight: 600;
+      pointer-events: none;
+      user-select: none;
+      transition: all 4s linear;
+      z-index: 10;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    }
+    
+    /* Content Info */
+    .content-info {
+      padding: 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .content-info h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    
+    /* Forum Widget */
+    .forum-widget {
+      padding: 24px;
+      background: var(--bg);
+      flex: 1;
+    }
+    .forum-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .comment-item {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+    .comment-body {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 16px;
+      border-radius: var(--radius-md);
+      flex: 1;
+    }
+    .comment-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    
+    /* Editor (VIP) vs Read-only (Freemium) */
+    .forum-editor {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .editor-input {
+      flex: 1;
+      min-height: 80px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      background: var(--surface);
+      resize: vertical;
+      font-family: inherit;
+    }
+    .editor-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .freemium-banner {
+      background: color-mix(in oklch, var(--warning) 15%, transparent);
+      border: 1px solid color-mix(in oklch, var(--warning) 40%, transparent);
+      color: var(--warning);
+      padding: 16px;
+      border-radius: var(--radius-md);
+      margin-bottom: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    /* Upsell Modal */
+    .upsell-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .upsell-modal.active { display: flex; }
+    .upsell-box {
+      background: var(--surface);
+      width: 100%;
+      max-width: 480px;
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+    }
+    .upsell-box img {
+      width: 120px;
+      margin-bottom: 24px;
+    }
+    
+    @media (max-width: 900px) {
+      .learning-layout { flex-direction: column; }
+      .sidebar { width: 100%; height: 40vh; order: 2; border-right: none; border-top: 1px solid var(--border); }
+      .main-area { height: 60vh; order: 1; }
+    }
+  </style>
+</head>
+<body>
+  
+  <nav class="navbar" style="height: 56px;">
+    <div class="container flex items-center justify-between w-full" style="max-width: 100%;">
+      <a href="index.html" class="navbar-brand">LMS Luyện thi</a>
+      <div class="flex items-center gap-4">
+        <div style="font-size: 14px; font-weight: 500;">0912***789 - Nguyễn Văn A</div>
+        <button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;" onclick="toggleRole()">Đổi Role (Hiện: VIP)</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="learning-layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2 style="font-size: 16px;">Toán Học 12 - Chinh Phục Điểm 9+</h2>
+        <div style="font-size: 13px; color: var(--muted); margin-top: 4px;">Tiến độ: 2/15 bài (15%)</div>
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
+        </div>
+      </div>
+      
+      <div class="curriculum-list">
+        <div class="chapter">
+          <div class="chapter-title">Chương 1: Khảo sát hàm số</div>
+          
+          <div class="lesson" onclick="loadVideo('Bài 1: Sự đồng biến, nghịch biến')">
+            <div class="lesson-icon icon-done">✓</div>
+            <div class="lesson-info">
+              <div class="lesson-name">Bài 1: Sự đồng biến, nghịch biến</div>
+              <div class="lesson-duration">45:20</div>
+            </div>
+          </div>
+          
+          <div class="lesson active" onclick="loadVideo('Bài 2: Cực trị của hàm số')">
+            <div class="lesson-icon icon-playing">▶</div>
+            <div class="lesson-info">
+              <div class="lesson-name">Bài 2: Cực trị của hàm số</div>
+              <div class="lesson-duration">52:10</div>
+            </div>
+            <div style="align-self: center;"><span class="badge badge-success" style="font-size: 10px;">Học thử</span></div>
+          </div>
+          
+          <div class="lesson" onclick="checkAccess(event)">
+            <div class="lesson-icon icon-pending">🔒</div>
+            <div class="lesson-info">
+              <div class="lesson-name">Bài 3: GTLN, GTNN</div>
+              <div class="lesson-duration">38:45</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="chapter">
+          <div class="chapter-title">Chương 2: Khối đa diện</div>
+          <div class="lesson" onclick="checkAccess(event)">
+            <div class="lesson-icon icon-pending">🔒</div>
+            <div class="lesson-info">
+              <div class="lesson-name">Bài 1: Khái niệm khối đa diện</div>
+              <div class="lesson-duration">41:00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main Area -->
+    <div class="main-area">
+      <!-- Video Player -->
+      <div class="video-container" id="video-box" oncontextmenu="return false;">
+        <div class="video-placeholder">Trình phát Video (Right-click bị chặn)</div>
+        <div class="watermark" id="watermark">0912***789 - Nguyễn Văn A</div>
+      </div>
+      
+      <!-- Content Info -->
+      <div class="content-info">
+        <h1 id="current-title">Bài 2: Cực trị của hàm số</h1>
+        <p class="text-muted">Giảng viên: Thầy Nguyễn Văn Trọng • 52:10</p>
+      </div>
+      
+      <!-- Forum Widget -->
+      <div class="forum-widget">
+        <div class="forum-header">
+          <h2>Diễn đàn Hỏi đáp</h2>
+          <span class="text-muted" style="font-size: 14px;">12 Bình luận</span>
+        </div>
+        
+        <!-- Editor for VIP -->
+        <div class="forum-editor" id="forum-editor">
+          <div class="avatar"></div>
+          <div style="flex: 1;">
+            <textarea class="editor-input" placeholder="Bạn có câu hỏi gì cho bài học này?"></textarea>
+            <div class="editor-actions">
+              <button class="btn btn-ghost" style="padding: 6px;">📷 Đính kèm ảnh</button>
+              <button class="btn btn-primary">Gửi câu hỏi</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Freemium Banner -->
+        <div class="freemium-banner" id="freemium-banner" style="display: none;">
+          <div>
+            <div style="font-weight: 600; margin-bottom: 4px;">Tính năng hỏi đáp bị khóa</div>
+            <div style="font-size: 13px;">Chỉ tài khoản VIP mới có thể gửi câu hỏi và tương tác trên diễn đàn.</div>
+          </div>
+          <button class="btn btn-primary" onclick="showUpsell()">Nâng cấp ngay</button>
+        </div>
+        
+        <!-- Comments -->
+        <div class="comment-item">
+          <div class="avatar"></div>
+          <div class="comment-body">
+            <div class="comment-meta">
+              <span style="font-weight: 600;">Trần Văn B (Học sinh)</span>
+              <span class="text-muted">2 giờ trước</span>
+            </div>
+            <p style="font-size: 14px; line-height: 1.5;">Thầy ơi, ở phút 12:45 em chưa hiểu tại sao đạo hàm lại đổi dấu ở điểm đó ạ?</p>
+          </div>
+        </div>
+        
+        <div class="comment-item" style="margin-left: 56px;">
+          <div class="avatar" style="background: var(--accent);"></div>
+          <div class="comment-body" style="border-color: var(--accent);">
+            <div class="comment-meta">
+              <span style="font-weight: 600; color: var(--accent);">Thầy Nguyễn Văn Trọng (Giảng viên)</span>
+              <span class="text-muted">1 giờ trước</span>
+            </div>
+            <p style="font-size: 14px; line-height: 1.5;">Chào em, vì qua nghiệm bội lẻ thì đạo hàm sẽ đổi dấu nhé. Em xem lại định lý 1 trong SGK trang 15.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upsell Modal -->
+  <div class="upsell-modal" id="upsell-modal">
+    <div class="upsell-box">
+      <div style="font-size: 64px; margin-bottom: 16px;">👑</div>
+      <h2 style="margin-bottom: 12px;">Nâng cấp VIP để mở khóa</h2>
+      <p class="text-muted mb-6">Bạn đang xem bài học ở chế độ học thử. Nâng cấp tài khoản để xem toàn bộ 145 bài giảng, thi thử và đặt câu hỏi cho giảng viên.</p>
+      
+      <div class="text-center mb-6">
+        <span style="font-size: 32px; font-weight: 700;">899,000đ</span>
+      </div>
+      
+      <button class="btn btn-primary w-full mb-2" style="padding: 12px; font-size: 16px;" onclick="window.location.href='index.html'">Nâng cấp qua VietQR</button>
+      <button class="btn btn-ghost mt-2" onclick="document.getElementById('upsell-modal').classList.remove('active')">Để sau</button>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let isVIP = true;
+
+    // Role toggle for prototype
+    function toggleRole() {
+      isVIP = !isVIP;
+      alert("Đã chuyển sang chế độ: " + (isVIP ? "VIP" : "Freemium"));
+      if (isVIP) {
+        document.getElementById('forum-editor').style.display = 'flex';
+        document.getElementById('freemium-banner').style.display = 'none';
+      } else {
+        document.getElementById('forum-editor').style.display = 'none';
+        document.getElementById('freemium-banner').style.display = 'flex';
+      }
+    }
+
+    function checkAccess(e) {
+      if (!isVIP) {
+        showUpsell();
+      } else {
+        const title = e.currentTarget.querySelector('.lesson-name').innerText;
+        loadVideo(title);
+      }
+    }
+
+    function showUpsell() {
+      document.getElementById('upsell-modal').classList.add('active');
+    }
+
+    function loadVideo(title) {
+      document.getElementById('current-title').innerText = title;
+      // Change active state in sidebar
+    }
+
+    // Dynamic Watermark Logic
+    const watermark = document.getElementById('watermark');
+    const container = document.getElementById('video-box');
+    
+    setInterval(() => {
+      // Move randomly
+      const x = Math.random() * 80; // 0-80%
+      const y = Math.random() * 80; // 0-80%
+      watermark.style.left = x + '%';
+      watermark.style.top = y + '%';
+      // Adjust opacity slightly for "chạy mờ ngẫu nhiên"
+      watermark.style.opacity = (Math.random() * 0.3 + 0.2).toFixed(2);
+    }, 4000);
+
+    // Prevent F12 (Security UI requirement demo)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'F12') {
+        e.preventDefault();
+        alert("Chức năng Developer Tools đã bị chặn trên trang này.");
+      }
+    });
+  </script>
+</body>
+</html>

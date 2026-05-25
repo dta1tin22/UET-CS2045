@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hệ thống Thi thử - LMS</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    body {
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    /* Quiz Layout */
+    .quiz-layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    
+    /* Main Quiz Area */
+    .quiz-main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px;
+      padding-bottom: 80px;
+    }
+    .quiz-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    /* Floating Timer */
+    .floating-timer {
+      position: fixed;
+      top: 80px;
+      right: 32px;
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 12px 24px;
+      box-shadow: var(--shadow-lg);
+      font-family: var(--font-mono, monospace);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--fg);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .timer-warning {
+      border-color: var(--danger);
+      color: var(--danger);
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    }
+    
+    /* Questions */
+    .question-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .q-number {
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--accent);
+    }
+    .q-text {
+      font-size: 16px;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .q-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .option-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .option-label:hover { background: var(--bg); }
+    input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+    }
+    input[type="radio"]:checked + .option-text {
+      font-weight: 500;
+    }
+    .option-label.selected {
+      border-color: var(--accent);
+      background: color-mix(in oklch, var(--accent) 5%, transparent);
+    }
+    
+    /* Sidebar / Answer Sheet */
+    .quiz-sidebar {
+      width: 320px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+    .sheet-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .sheet-grid {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .sheet-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      font-weight: 500;
+      background: var(--surface);
+      cursor: pointer;
+    }
+    .sheet-btn.done {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    .sheet-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+    }
+    
+    /* Modals */
+    .cheat-modal, .result-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .cheat-modal.active, .result-modal.active { display: flex; }
+    
+    .modal-box {
+      background: var(--surface);
+      width: 100%;
+      max-width: 440px;
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+    }
+    
+    /* Results Dashboard */
+    .result-dashboard {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: none;
+      padding: 32px;
+    }
+    .score-banner {
+      background: color-mix(in oklch, var(--success) 10%, transparent);
+      border: 1px solid var(--success);
+      padding: 32px;
+      border-radius: var(--radius-lg);
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .score-circle {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: white;
+      border: 4px solid var(--success);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+    
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    
+    .chart-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .solution-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .solution-table th, .solution-table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .solution-table th { background: var(--bg); font-weight: 600; }
+    
+    .badge-correct { color: var(--success); font-weight: 600; }
+    .badge-wrong { color: var(--danger); font-weight: 600; }
+  </style>
+</head>
+<body>
+  
+  <nav class="navbar">
+    <div class="container flex items-center justify-between w-full">
+      <div class="navbar-brand">LMS Luyện thi - Chế độ Thi thử</div>
+      <button class="btn btn-outline" style="font-size: 13px;" onclick="window.location.href='index.html'">Thoát</button>
+    </div>
+  </nav>
+
+  <!-- ACTIVE QUIZ VIEW -->
+  <div class="quiz-layout" id="quiz-view">
+    
+    <!-- Floating Timer -->
+    <div class="floating-timer" id="timer">
+      ⏱ <span id="time-display">90:00</span>
+    </div>
+
+    <!-- Main Quiz -->
+    <div class="quiz-main">
+      <div class="quiz-container">
+        
+        <h2>Đề khảo sát chất lượng môn Toán (Lần 1)</h2>
+        <p class="text-muted mb-6">Môn: Toán Học • Thời gian: 90 phút • 50 Câu</p>
+        
+        <!-- Question 1 -->
+        <div class="question-card" id="q1">
+          <div class="q-number">Câu 1</div>
+          <div class="q-text">Hàm số y = x³ - 3x + 2 đồng biến trên khoảng nào dưới đây?</div>
+          <div class="q-options">
+            <label class="option-label" onclick="selectOpt(this, 1)">
+              <input type="radio" name="q1">
+              <span class="option-text">A. (-∞, -1) và (1, +∞)</span>
+            </label>
+            <label class="option-label" onclick="selectOpt(this, 1)">
+              <input type="radio" name="q1">
+              <span class="option-text">B. (-1, 1)</span>
+            </label>
+            <label class="option-label" onclick="selectOpt(this, 1)">
+              <input type="radio" name="q1">
+              <span class="option-text">C. (-∞, 1)</span>
+            </label>
+            <label class="option-label" onclick="selectOpt(this, 1)">
+              <input type="radio" name="q1">
+              <span class="option-text">D. (1, +∞)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Question 2 -->
+        <div class="question-card" id="q2">
+          <div class="q-number">Câu 2</div>
+          <div class="q-text">Cho hàm số y = f(x) có bảng biến thiên như sau. Điểm cực tiểu của hàm số là:</div>
+          <div style="width: 100%; height: 120px; background: var(--bg); display:grid; place-items:center; margin-bottom: 16px; border: 1px dashed var(--border);">[Hình ảnh bảng biến thiên]</div>
+          <div class="q-options">
+            <label class="option-label" onclick="selectOpt(this, 2)">
+              <input type="radio" name="q2">
+              <span class="option-text">A. x = -1</span>
+            </label>
+            <label class="option-label" onclick="selectOpt(this, 2)">
+              <input type="radio" name="q2">
+              <span class="option-text">B. x = 2</span>
+            </label>
+            <label class="option-label" onclick="selectOpt(this, 2)">
+              <input type="radio" name="q2">
+              <span class="option-text">C. x = 0</span>
+            </label>
+            <label class="option-label" onclick="selectOpt(this, 2)">
+              <input type="radio" name="q2">
+              <span class="option-text">D. x = 1</span>
+            </label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    
+    <!-- Sidebar Sheet -->
+    <div class="quiz-sidebar">
+      <div class="sheet-header">Phiếu trả lời (2/50)</div>
+      <div class="sheet-grid">
+        <div class="sheet-btn done">1</div>
+        <div class="sheet-btn done">2</div>
+        <div class="sheet-btn">3</div>
+        <div class="sheet-btn">4</div>
+        <div class="sheet-btn">5</div>
+        <div class="sheet-btn">6</div>
+        <div class="sheet-btn">7</div>
+        <div class="sheet-btn">8</div>
+        <div class="sheet-btn">9</div>
+        <div class="sheet-btn">10</div>
+        <!-- Add more buttons conceptually -->
+      </div>
+      <div class="sheet-footer">
+        <button class="btn btn-primary w-full" onclick="submitQuiz()">Nộp bài ngay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POST-QUIZ DASHBOARD -->
+  <div class="result-dashboard" id="result-view">
+    <div class="flex items-center justify-between mb-6">
+      <h2>Kết quả Bài thi</h2>
+      <button class="btn btn-outline" onclick="window.location.href='index.html'">Quay lại Khóa học</button>
+    </div>
+    
+    <div class="score-banner">
+      <div class="score-circle">
+        <div style="font-size: 32px; font-weight: 700; line-height: 1;">8.4</div>
+        <div style="font-size: 12px; color: var(--muted);">Điểm</div>
+      </div>
+      <h3 style="font-size: 20px; margin-bottom: 8px;">Khá lắm, Nguyễn Văn A!</h3>
+      <p style="color: var(--muted);">Bạn đúng 42/50 câu. Thời gian làm bài: 82 phút 15 giây.</p>
+    </div>
+    
+    <div class="analysis-grid">
+      <div class="chart-box">
+        <h3 style="margin-bottom: 16px; font-size: 16px;">Phân tích theo Chuyên đề</h3>
+        <!-- Pseudo Chart -->
+        <div style="width: 100%; display: flex; align-items: flex-end; justify-content: space-around; height: 120px; padding: 0 16px; border-bottom: 1px solid var(--border);">
+          <div style="width: 40px; height: 100%; background: var(--success);" title="Hàm số: 100%"></div>
+          <div style="width: 40px; height: 80%; background: var(--accent);" title="Mũ & Logarit: 80%"></div>
+          <div style="width: 40px; height: 50%; background: var(--warning);" title="Tích phân: 50%"></div>
+          <div style="width: 40px; height: 30%; background: var(--danger);" title="Oxyz: 30%"></div>
+        </div>
+        <div style="display: flex; justify-content: space-around; width: 100%; margin-top: 8px; font-size: 11px; color: var(--muted);">
+          <span>Hàm số</span>
+          <span>Logarit</span>
+          <span>Tích phân</span>
+          <span>Oxyz</span>
+        </div>
+      </div>
+      
+      <div class="chart-box">
+        <h3 style="margin-bottom: 16px; font-size: 16px;">Phân loại lỗi sai</h3>
+        <ul style="width: 100%; list-style: none; font-size: 14px;">
+          <li style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+            <span>Lỗi tính toán:</span> <strong>5 câu</strong>
+          </li>
+          <li style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+            <span>Lỗi thiếu điều kiện:</span> <strong>2 câu</strong>
+          </li>
+          <li style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+            <span>Chưa biết cách giải:</span> <strong>1 câu</strong>
+          </li>
+        </ul>
+      </div>
+    </div>
+    
+    <h3 style="margin-bottom: 16px;">Bảng Lời giải Chi tiết</h3>
+    <table class="solution-table">
+      <thead>
+        <tr>
+          <th>Câu</th>
+          <th>Đáp án của bạn</th>
+          <th>Đáp án đúng</th>
+          <th>Chuyên đề</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td class="badge-correct">A</td>
+          <td>A</td>
+          <td>Đơn điệu hàm số</td>
+          <td><a href="#">Xem chi tiết</a></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td class="badge-wrong">B</td>
+          <td>C</td>
+          <td>Cực trị</td>
+          <td><a href="#">Xem chi tiết</a></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td class="badge-correct">D</td>
+          <td>D</td>
+          <td>Đồ thị hàm số</td>
+          <td><a href="#">Xem chi tiết</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Anti-Cheat Modal -->
+  <div class="cheat-modal" id="cheat-modal">
+    <div class="modal-box">
+      <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+      <h2 class="text-danger">Cảnh báo Vi phạm</h2>
+      <p id="cheat-msg">Bạn vừa rời khỏi tab bài thi. Đây là lần vi phạm thứ 1. Nếu vi phạm 3 lần, bài thi sẽ tự động khóa và nộp.</p>
+      <button class="btn btn-primary mt-4 w-full" onclick="dismissCheat()">Tiếp tục làm bài</button>
+    </div>
+  </div>
+
+  <script>
+    // Selection logic
+    function selectOpt(labelEl, qNum) {
+      // Remove selected class from siblings
+      const options = labelEl.parentElement.querySelectorAll('.option-label');
+      options.forEach(opt => opt.classList.remove('selected'));
+      // Add selected
+      labelEl.classList.add('selected');
+    }
+    
+    // Timer Logic (Preserves on refresh natively by writing to localStorage)
+    let timeLeft = parseInt(localStorage.getItem('quiz_time')) || 90 * 60; // 90 mins
+    let timerInt;
+    
+    function updateTimer() {
+      if (timeLeft <= 0) {
+        clearInterval(timerInt);
+        submitQuiz();
+        return;
+      }
+      
+      const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+      const s = (timeLeft % 60).toString().padStart(2, '0');
+      document.getElementById('time-display').textContent = `${m}:${s}`;
+      
+      if (timeLeft <= 300) { // 5 mins left
+        document.getElementById('timer').classList.add('timer-warning');
+      }
+      
+      localStorage.setItem('quiz_time', timeLeft);
+      timeLeft--;
+    }
+    
+    // Start timer only if in quiz view
+    if (document.getElementById('quiz-view').style.display !== 'none') {
+      timerInt = setInterval(updateTimer, 1000);
+      updateTimer();
+    }
+    
+    // Anti-cheat (Tab Visibility)
+    let cheatCount = parseInt(localStorage.getItem('cheat_count')) || 0;
+    
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && document.getElementById('quiz-view').style.display !== 'none') {
+        cheatCount++;
+        localStorage.setItem('cheat_count', cheatCount);
+        
+        const modal = document.getElementById('cheat-modal');
+        const msg = document.getElementById('cheat-msg');
+        
+        if (cheatCount >= 3) {
+          msg.innerHTML = "Bạn đã vi phạm 3 lần. Bài thi đã bị <b>khóa và nộp tự động</b>.";
+          modal.querySelector('button').innerText = "Xem kết quả";
+          modal.querySelector('button').onclick = submitQuiz;
+        } else {
+          msg.innerText = `Bạn vừa rời khỏi tab bài thi. Đây là lần vi phạm thứ ${cheatCount}. Nếu vi phạm 3 lần, bài thi sẽ tự động khóa và nộp.`;
+        }
+        modal.classList.add('active');
+      }
+    });
+    
+    function dismissCheat() {
+      document.getElementById('cheat-modal').classList.remove('active');
+    }
+    
+    function submitQuiz() {
+      // Clear interval and local storage
+      clearInterval(timerInt);
+      localStorage.removeItem('quiz_time');
+      localStorage.removeItem('cheat_count');
+      
+      // Hide quiz, show results
+      document.getElementById('quiz-view').style.display = 'none';
+      document.getElementById('cheat-modal').classList.remove('active');
+      document.getElementById('result-view').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

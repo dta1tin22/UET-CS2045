@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LMS Luyện thi Đại học - UI Prototype</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    .launcher-header {
+      padding: 60px 0 40px;
+      text-align: center;
+    }
+    .launcher-header h1 {
+      font-size: 32px;
+      margin-bottom: 16px;
+    }
+    .launcher-header p {
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto;
+      font-size: 18px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-top: 40px;
+      padding-bottom: 80px;
+    }
+    .screen-card {
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .screen-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      text-decoration: none;
+    }
+    .screen-card-img {
+      height: 160px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+      color: var(--muted);
+      font-size: 48px;
+    }
+    .screen-card-content {
+      padding: 20px;
+      flex: 1;
+    }
+    .screen-card-title {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: var(--fg);
+    }
+    .screen-card-desc {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="launcher-header">
+      <h1>LMS Luyện thi Đại học</h1>
+      <p>Prototype giao diện người dùng dựa trên yêu cầu hệ thống. Chọn một màn hình bên dưới để trải nghiệm các luồng tương tác.</p>
+    </div>
+
+    <div class="grid">
+      <a href="landing.html" class="card screen-card">
+        <div class="screen-card-img">🏠</div>
+        <div class="screen-card-content">
+          <h3 class="screen-card-title">1. Giới thiệu Khóa học (Landing)</h3>
+          <p class="screen-card-desc">Trang chủ cho khách, xem tổng quan, giá bán, preview video và nút CTA đăng ký/đăng nhập.</p>
+        </div>
+      </a>
+
+      <a href="auth.html" class="card screen-card">
+        <div class="screen-card-img">🔐</div>
+        <div class="screen-card-content">
+          <h3 class="screen-card-title">2. Xác thực & Quản lý Tài khoản</h3>
+          <p class="screen-card-desc">Form đăng nhập, đăng ký, xác thực OTP, MFA và quản lý hồ sơ, thiết bị.</p>
+        </div>
+      </a>
+
+      <a href="learning.html" class="card screen-card">
+        <div class="screen-card-img">▶️</div>
+        <div class="screen-card-content">
+          <h3 class="screen-card-title">3. Trải nghiệm Học tập (Video & Forum)</h3>
+          <p class="screen-card-desc">Trình phát video với Dynamic Watermark, thanh tiến độ, Upsell cho Freemium, và Diễn đàn hỏi đáp.</p>
+        </div>
+      </a>
+
+      <a href="quiz.html" class="card screen-card">
+        <div class="screen-card-img">📝</div>
+        <div class="screen-card-content">
+          <h3 class="screen-card-title">4. Hệ thống Thi thử</h3>
+          <p class="screen-card-desc">Giao diện làm bài với đồng hồ nổi, cảnh báo gian lận và bảng điểm/phân tích chi tiết sau khi thi.</p>
+        </div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

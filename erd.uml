@@ -1,0 +1,287 @@
+@startuml
+' Title and style
+title LMS Luyện Thi Đại học – Entity Relationship Diagram (Corrected)
+!define entity(x) entity x
+hide circle
+skinparam linetype ortho
+
+' ==================== USER & ROLE MANAGEMENT ====================
+entity "User" as users {
+    * user_id : UUID <<PK>>
+    --
+    full_name : VARCHAR
+    phone : VARCHAR(15) UNIQUE
+    email : VARCHAR(255) UNIQUE
+    password_hash : VARCHAR
+    role : ENUM(Admin,Teacher,Staff,Student,Guest)
+    is_vip : BOOLEAN
+    created_at : TIMESTAMP
+}
+
+entity "UserDevice" as devices {
+    * device_id : UUID <<PK>>
+    --
+    user_id : UUID <<FK>>
+    device_name : VARCHAR
+    device_fingerprint : VARCHAR
+    ip_address : INET
+    last_active : TIMESTAMP
+    city_province : VARCHAR
+}
+
+entity "LoginHistory" as login_history {
+    * login_id : UUID <<PK>>
+    --
+    user_id : UUID <<FK>>
+    ip_address : INET
+    city_province : VARCHAR
+    login_time : TIMESTAMP
+    success : BOOLEAN
+}
+
+' ==================== COURSE & CONTENT ====================
+entity "Course" as courses {
+    * course_id : UUID <<PK>>
+    --
+    owner_teacher_id : UUID <<FK>>
+    title : VARCHAR
+    description : TEXT
+    price : DECIMAL
+    created_at : TIMESTAMP
+    is_published : BOOLEAN
+}
+
+entity "Lesson" as lessons {
+    * lesson_id : UUID <<PK>>
+    --
+    course_id : UUID <<FK>>
+    title : VARCHAR
+    order_index : INTEGER
+    is_trial : BOOLEAN
+    video_url : VARCHAR
+    video_provider : ENUM(Bunny,Vimeo)
+}
+
+entity "Enrollment" as enrollments {
+    * enrollment_id : UUID <<PK>>
+    --
+    user_id : UUID <<FK>>
+    course_id : UUID <<FK>>
+    purchased_at : TIMESTAMP
+    expiry_at : TIMESTAMP
+    is_active : BOOLEAN
+}
+
+' ==================== VIDEO SECURITY & WATERMARK ====================
+entity "VideoAccessToken" as video_tokens {
+    * token_id : UUID <<PK>>
+    --
+    user_id : UUID <<FK>>
+    lesson_id : UUID <<FK>>
+    token : VARCHAR UNIQUE
+    expires_at : TIMESTAMP
+    watermark_text : VARCHAR
+}
+
+' ==================== QUIZ ENGINE ====================
+entity "QuestionBank" as questions {
+    * question_id : UUID <<PK>>
+    --
+    created_by_teacher_id : UUID <<FK>>
+    subject : VARCHAR
+    topic : VARCHAR
+    difficulty_level : ENUM(Nhận biết,Thông hiểu,Vận dụng,Vận dụng cao)
+    content : TEXT
+    explanation : TEXT
+}
+
+entity "QuestionOption" as options {
+    * option_id : UUID <<PK>>
+    --
+    question_id : UUID <<FK>>
+    option_text : TEXT
+    is_correct : BOOLEAN
+    sort_order : INTEGER
+}
+
+entity "Quiz" as quizzes {
+    * quiz_id : UUID <<PK>>
+    --
+    course_id : UUID <<FK>>
+    title : VARCHAR
+    time_limit_seconds : INTEGER
+    is_static : BOOLEAN
+    static_content : TEXT
+}
+
+entity "QuizQuestionMapping" as quiz_questions {
+    * mapping_id : UUID <<PK>>
+    --
+    quiz_id : UUID <<FK>>
+    question_id : UUID <<FK>>
+    display_order : INTEGER
+}
+
+entity "QuizAttempt" as attempts {
+    * attempt_id : UUID <<PK>>
+    --
+    user_id : UUID <<FK>>
+    quiz_id : UUID <<FK>>
+    started_at : TIMESTAMP
+    time_spent_seconds : INTEGER
+    tab_switch_count : INTEGER
+    is_auto_submitted : BOOLEAN
+    submitted_at : TIMESTAMP
+    final_score : DECIMAL
+}
+
+entity "UserAnswer" as user_answers {
+    * answer_id : UUID <<PK>>
+    --
+    attempt_id : UUID <<FK>>
+    question_id : UUID <<FK>>
+    selected_option_id : UUID <<FK>>
+    is_correct : BOOLEAN
+}
+
+' ==================== LIVESTREAM ====================
+entity "LiveSession" as live_sessions {
+    * session_id : UUID <<PK>>
+    --
+    course_id : UUID <<FK>>
+    title : VARCHAR
+    scheduled_start : TIMESTAMP
+    scheduled_end : TIMESTAMP
+    is_public : BOOLEAN
+    stream_url : VARCHAR
+    tokenized_url_template : VARCHAR
+    vod_lesson_id : UUID <<FK>>
+}
+
+entity "LiveToken" as live_tokens {
+    * token_id : UUID <<PK>>
+    --
+    session_id : UUID <<FK>>
+    user_id : UUID <<FK>>
+    token : VARCHAR UNIQUE
+    expires_at : TIMESTAMP
+}
+
+entity "ChatMessage" as chat_messages {
+    * message_id : UUID <<PK>>
+    --
+    session_id : UUID <<FK>>
+    user_id : UUID <<FK>>
+    content : TEXT
+    sent_at : TIMESTAMP
+    is_hidden : BOOLEAN
+    blocked_user_id : UUID
+}
+
+' ==================== FORUM & NOTIFICATION ====================
+entity "ForumPost" as forum_posts {
+    * post_id : UUID <<PK>>
+    --
+    lesson_id : UUID <<FK>>
+    user_id : UUID <<FK>>
+    parent_post_id : UUID <<FK>>
+    content : TEXT
+    image_urls : JSON
+    created_at : TIMESTAMP
+}
+
+entity "NotificationOutbox" as notifications {
+    * notif_id : UUID <<PK>>
+    --
+    user_id : UUID <<FK>>
+    channel : ENUM(Email,Zalo,Messenger)
+    title : VARCHAR
+    content : TEXT
+    target_link : VARCHAR
+    sent_at : TIMESTAMP
+    status : ENUM(Pending,Sent,Failed)
+}
+
+' ==================== PAYMENT ====================
+entity "PaymentOrder" as orders {
+    * order_id : UUID <<PK>>
+    --
+    user_id : UUID <<FK>>
+    course_id : UUID <<FK>>
+    amount : DECIMAL
+    transaction_code : VARCHAR UNIQUE
+    status : ENUM(Pending,Completed,Failed,Refunded)
+    qr_code_data : TEXT
+    created_at : TIMESTAMP
+    completed_at : TIMESTAMP
+}
+
+entity "WebhookLog" as webhook_logs {
+    * webhook_id : UUID <<PK>>
+    --
+    order_id : UUID <<FK>>
+    raw_payload : JSON
+    processed_at : TIMESTAMP
+    idempotency_key : VARCHAR UNIQUE
+    success : BOOLEAN
+}
+
+entity "DailyRevenue" as daily_revenue {
+    * report_date : DATE <<PK>>
+    --
+    total_revenue : DECIMAL
+    new_vip_count : INTEGER
+    total_quiz_submissions : INTEGER
+}
+
+' ==================== RELATIONSHIPS ====================
+users ||--o{ devices : "has"
+users ||--o{ login_history : "logs"
+users ||--o{ enrollments : "enrolls in"
+users ||--o{ video_tokens : "requests"
+users ||--o{ attempts : "takes"
+users ||--o{ live_tokens : "access live"
+users ||--o{ chat_messages : "writes"
+users ||--o{ forum_posts : "posts"
+users ||--o{ notifications : "receives"
+users ||--o{ orders : "pays"
+users ||--o{ courses : "teaches"
+
+courses ||--o{ lessons : "contains"
+courses ||--o{ enrollments : "has enrolled"
+courses ||--o{ quizzes : "includes"
+courses ||--o{ live_sessions : "hosts"
+
+lessons ||--o{ video_tokens : "protected by"
+lessons ||--o{ forum_posts : "discussed in"
+
+questions ||--o{ options : "has"
+questions ||--o{ quiz_questions : "belongs to"
+questions ||--o{ user_answers : "answered in"
+
+quizzes ||--o{ quiz_questions : "contains"
+quizzes ||--o{ attempts : "has"
+
+attempts ||--o{ user_answers : "records"
+
+live_sessions ||--o{ live_tokens : "issues"
+live_sessions ||--o{ chat_messages : "contains"
+
+orders ||--|| webhook_logs : "triggers"
+
+' Notes
+note top of users
+  **RBAC**: Admin, Teacher, Staff, Student, Guest
+  **Anti-sharing**: device + IP tracking
+end note
+
+note top of video_tokens
+  **Dynamic Watermark**: Họ tên - SĐT
+end note
+
+note top of attempts
+  **Tab switch count** – auto-submit on 3 switches
+  Timer persists on network loss
+end note
+
+@enduml
